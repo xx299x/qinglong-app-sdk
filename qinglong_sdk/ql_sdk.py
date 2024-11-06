@@ -184,6 +184,48 @@ class QL:
         rt = self._get(path)
         return rt
 
+    # views
+    def crons_get_views(self):
+        path = f"/open/crons/views"
+        rt = self._get(path)
+        return rt
+
+    def crons_add_view(self, view_name: str, filters: [[str]]):
+        path = f"/open/crons/views"
+        """
+        https://github.com/whyour/qinglong/blob/b733937691c8d48f531acea7f9325cead85b565e/src/pages/crontab/viewCreateModal.tsx#L30
+          { name: intl.get('命令'), value: 'command' },
+          { name: intl.get('名称'), value: 'name' },
+          { name: intl.get('定时规则'), value: 'schedule' },
+          { name: intl.get('状态'), value: 'status', onlySelect: true },
+          { name: intl.get('标签'), value: 'labels' },
+          { name: intl.get('订阅'), value: 'sub_id', onlySelect: true },
+          
+          { name: intl.get('包含'), value: 'Reg' },
+          { name: intl.get('不包含'), value: 'NotReg' },
+          { name: intl.get('属于'), value: 'In', type: 'select' },
+          { name: intl.get('不属于'), value: 'Nin', type: 'select' },
+        """
+        new_filters = []
+        for cond in filters:
+            new_filters.append({
+                "property": cond[0],
+                "operation": cond[1],
+                "value": cond[2]
+            })
+        payload_dict = {"name": view_name,
+                        "filters": new_filters,
+                        "filterRelation": "and"}
+
+        rt = self._post(path, payload_dict)
+        return rt
+
+    def crons_del_view(self, view_ids: int | list):
+        path = f"/open/crons/views"
+        view_ids = [view_ids] if isinstance(view_ids, int) else view_ids
+        rt = self._delete(path, view_ids)
+        return rt
+
     def logs_get_all(self):
         path = f"/open/logs"
         rt = self._get(path)
@@ -491,6 +533,9 @@ class QL:
         return rt
 
     def test(self):
+        self.crons_get_views()
+        rt = self.crons_add_view('test', [['name', 'Reg', 'test']])
+        self.crons_del_view(rt['id'])
         self.crons_get_all()
         task_test = {
             'command': 'echo hello, world!',
@@ -618,6 +663,7 @@ class QL:
 
 if __name__ == "__main__":
     import os
+
     url = "http://127.0.0.1:5700"
     client_id = os.getenv("QL_CLIENT_ID")
     client_secret = os.getenv("QL_CLIENT_SECRET")
